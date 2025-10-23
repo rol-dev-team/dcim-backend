@@ -1,0 +1,289 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\SensorList;
+use App\Models\SensorTypeList;
+use App\Models\StateConfig;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
+class SensorListController extends Controller
+{
+//    public function index()
+//    {
+//        $sensorLists = SensorList::with(['dataCenter', 'device', 'sensorType', 'triggerType'])->get();
+//        return response()->json($sensorLists);
+//    }
+
+    public function index(Request $request)
+    {
+        $query = SensorList::with([
+            'dataCenter',
+            'device',
+            'sensorType:id,name',
+            'triggerType'
+        ]);
+
+        // Apply filters if 'device_id' is present in the request
+        if ($request->has('device_id')) {
+            $query->where('device_id', $request->device_id);
+        }
+
+        // Apply filters if 'trigger_type_id' is present in the request
+        if ($request->has('trigger_type_id')) {
+            $query->where('trigger_type_id', $request->trigger_type_id);
+        }
+
+        // Get the results from the database
+        $sensorLists = $query->get();
+
+        // Return the sensor lists as a JSON response
+        return response()->json($sensorLists);
+    }
+
+//    public function store(Request $request)
+//    {
+//        $validated = $request->validate([
+//            'data_center_id' => 'required|integer',
+//            'device_id' => 'required|integer',
+//            'sensor_type_list_id' => 'required|integer',
+//            'trigger_type_id' => 'required|integer',
+//            'sound_status' => 'sometimes|integer',
+//            'blink_status' => 'sometimes|integer',
+//            'location' => 'required|string|max:255',
+//            'status' => 'sometimes|integer',
+//            'timestamp' => 'sometimes|date'
+//        ]);
+//
+//        // Generate a 7-digit unique ID
+//        do {
+//            $uniqueId = mt_rand(1000000, 9999999);
+//        } while (SensorList::where('unique_id', $uniqueId)->exists());
+//
+//        $validated['unique_id'] = $uniqueId;
+//
+//        $sensorList = SensorList::create($validated);
+//        return response()->json($sensorList, 201);
+//    }
+
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'data_center_id' => 'required|integer',
+            'device_id' => 'required|integer',
+            'sensor_type_list_id' => 'required|integer',
+            'trigger_type_id' => 'required|integer',
+            'sound_status' => 'sometimes|integer',
+            'blink_status' => 'sometimes|integer',
+            'sensor_name' => 'nullable|string|max:255',
+            'location' => 'required|string|max:255',
+            'status' => 'sometimes|integer',
+            'timestamp' => 'sometimes|date'
+        ]);
+
+        try {
+            // Generate a 7-digit unique ID
+            do {
+                $uniqueId = mt_rand(1000000, 9999999);
+            } while (SensorList::where('unique_id', $uniqueId)->exists());
+
+            $validated['unique_id'] = $uniqueId;
+
+            // Start database transaction
+            DB::beginTransaction();
+
+            $sensorList = SensorList::create($validated);
+
+            // Check if sensor type is Water (4) or Smoke (5)
+            if (in_array($validated['sensor_type_list_id'], [3, 4, 5])) {
+                switch ($validated['sensor_type_list_id']) {
+                    case 3:
+                        $stateConfigs = [
+                            [
+                                'value' => 0,
+                                'name' => 'Normal',
+                                'attache_sound' => null,
+                                'url' => null,
+                                'color' => '#00ff2a',
+                                'created_at' => now(),
+                                'updated_at' => now()
+                            ],
+                            [
+                                'value' => 1,
+                                'name' => 'Warning',
+                                'attache_sound' => null,
+                                'url' => null,
+                                'color' => '#cbc401',
+                                'created_at' => now(),
+                                'updated_at' => now()
+                            ],
+                            [
+                                'value' => 3,
+                                'name' => 'Fault',
+                                'attache_sound' => null,
+                                'url' => null,
+                                'color' => '#9c9c9c',
+                                'created_at' => now(),
+                                'updated_at' => now()
+                            ]
+                        ];
+                        break;
+
+                    case 4:
+                        $stateConfigs = [
+                            [
+                                'value' => 0,
+                                'name' => 'Normal',
+                                'attache_sound' => null,
+                                'url' => null,
+                                'color' => '#00ff2a',
+                                'created_at' => now(),
+                                'updated_at' => now()
+                            ],
+                            [
+                                'value' => 1,
+                                'name' => 'Warning',
+                                'attache_sound' => null,
+                                'url' => null,
+                                'color' => '#cbc401',
+                                'created_at' => now(),
+                                'updated_at' => now()
+                            ],
+                            [
+                                'value' => 2,
+                                'name' => 'Leaking',
+                                'attache_sound' => null,
+                                'url' => null,
+                                'color' => '#ff3300',
+                                'created_at' => now(),
+                                'updated_at' => now()
+                            ],
+                            [
+                                'value' => 3,
+                                'name' => 'OverFlow',
+                                'attache_sound' => null,
+                                'url' => null,
+                                'color' => '#9c9c9c',
+                                'created_at' => now(),
+                                'updated_at' => now()
+                            ]
+                        ];
+                        break;
+
+                    case 5:
+                        $stateConfigs = [
+                            [
+                                'value' => 0,
+                                'name' => 'Normal',
+                                'attache_sound' => null,
+                                'url' => null,
+                                'color' => '#00ff2a',
+                                'created_at' => now(),
+                                'updated_at' => now()
+                            ],
+                            [
+                                'value' => 1,
+                                'name' => 'Warning',
+                                'attache_sound' => null,
+                                'url' => null,
+                                'color' => '#cbc401',
+                                'created_at' => now(),
+                                'updated_at' => now()
+                            ]
+                        ];
+                        break;
+                }
+
+                // Add sensor_id to each config
+                $stateConfigs = array_map(function($config) use ($sensorList) {
+                    $config['sensor_id'] = $sensorList->id;
+                    return $config;
+                }, $stateConfigs);
+
+                // Insert all configs at once
+                $inserted = StateConfig::insert($stateConfigs);
+
+                if (!$inserted) {
+                    throw new \Exception('Failed to insert state configurations');
+                }
+
+                \Log::info('State configs created for sensor', [
+                    'sensor_id' => $sensorList->id,
+                    'configs_count' => count($stateConfigs)
+                ]);
+            }
+
+            // Commit transaction if everything is successful
+            DB::commit();
+
+            return response()->json($sensorList, 201);
+
+        } catch (\Exception $e) {
+            // Rollback transaction on error
+            DB::rollBack();
+
+            \Log::error('Sensor creation failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'message' => 'Sensor creation failed',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function show($id)
+    {
+        $sensorList = SensorList::with(['dataCenter', 'device', 'sensorType', 'triggerType'])->findOrFail($id);
+        return response()->json($sensorList);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $sensorList = SensorList::findOrFail($id);
+
+        $validated = $request->validate([
+            'data_center_id' => 'sometimes|integer',
+            'device_id' => 'sometimes|integer',
+            'sensor_type_list_id' => 'sometimes|integer',
+            'unique_id' => 'sometimes|integer',
+            'trigger_type_id' => 'sometimes|integer',
+            'sound_status' => 'sometimes|integer',
+            'blink_status' => 'sometimes|integer',
+            'sensor_name' => 'nullable|string|max:255',
+            'location' => 'sometimes|string|max:255',
+            'status' => 'sometimes|integer',
+            'timestamp' => 'sometimes|date'
+        ]);
+
+        $sensorList->update($validated);
+        return response()->json($sensorList);
+    }
+
+    public function destroy($id)
+    {
+        SensorList::findOrFail($id)->delete();
+        return response()->json(null, 204);
+    }
+
+
+    public function fetchSensorTypeList()
+    {
+        $sensorsType = SensorTypeList::all();
+
+        return response()->json([
+            'status' => true,
+            'data' => $sensorsType
+        ]);
+    }
+
+    public function getByDevice($deviceId)
+    {
+        $sensors = SensorList::where('device_id', $deviceId)->get();
+        return response()->json($sensors);
+    }
+}
