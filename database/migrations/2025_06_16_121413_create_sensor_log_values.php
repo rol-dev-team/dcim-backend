@@ -14,36 +14,50 @@ return new class extends Migration
      */
     public function up()
     {
-        // Drop the table if it already exists to allow for re-running migrations
-        Schema::dropIfExists('sensor_log_values');
-
-        // Use DB::statement to create the table with partitioning syntax
-        // Primary key MUST include the partitioning column (created_at)
-        // UNIX_TIMESTAMP(created_at) is used because RANGE partitioning requires an integer expression.
-        // We're creating partitions based on the start of each week.
-        DB::statement("
-            CREATE TABLE sensor_log_values (
-                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-                sensor_id BIGINT UNSIGNED NOT NULL,
-                value VARCHAR(255) NOT NULL,
-                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                PRIMARY KEY (id, created_at) -- Primary key MUST include 'created_at' for partitioning
-            )
-            PARTITION BY RANGE (UNIX_TIMESTAMP(created_at)) (
-                " . $this->generateInitialPartitions(5) . " -- Generate initial partitions for current + next 4 weeks
+        /* ---------- 1.  PostgreSQL-safe partitioned master table ---------- */
+        if (!Schema::hasTable('sensor_log_values')) {
+            DB::statement(
+                'CREATE TABLE sensor_log_values (
+                    id         BIGSERIAL,
+                    sensor_id  BIGINT       NOT NULL,
+                    value      VARCHAR(255) NOT NULL,
+                    created_at TIMESTAMP    NOT NULL DEFAULT NOW(),
+                    updated_at TIMESTAMP    NOT NULL DEFAULT NOW(),
+                    PRIMARY KEY (id, created_at)          -- partition column must be in PK
+                ) PARTITION BY RANGE (created_at);'
             );
-        ");
+        }
 
-        // The foreign key constraint has been removed here due to MySQL/MariaDB limitation:
-        // "Partitioned tables do not support FOREIGN KEY".
-        // You will need to enforce referential integrity at the application level.
+        /* ---------- 2.  weekly partitions (create only if missing) -------- */
+        foreach ($this->weeklyRanges(5) as [$name, $start, $end]) {
+            $exists = DB::select(
+                "SELECT 1 FROM pg_class c
+                 JOIN pg_namespace n ON n.oid = c.relnamespace
+                 WHERE c.relname = ? AND n.nspname = current_schema()",
+                [$name]
+            );
+            if (!$exists) {
+                DB::statement(
+                    "CREATE TABLE {$name}
+                     PARTITION OF sensor_log_values
+                     FOR VALUES FROM ('{$start}') TO ('{$end}');"
+                );
+            }
+        }
 
-        Schema::table('sensor_log_values', function (Blueprint $table) {
-            // Add the composite index as originally requested, outside the PK
-            // This can still be beneficial for queries filtering by sensor_id first.
-            $table->index(['sensor_id', 'created_at']);
-        });
+        /* ---------- 3.  helper index (create only once) ------------------ */
+        $indexExists = DB::select(
+            "SELECT 1 FROM pg_indexes
+             WHERE schemaname = current_schema()
+               AND tablename  = 'sensor_log_values'
+               AND indexname  = 'sensor_log_values_sensor_created_idx'"
+        );
+        if (!$indexExists) {
+            DB::statement(
+                'CREATE INDEX sensor_log_values_sensor_created_idx
+                 ON sensor_log_values (sensor_id, created_at);'
+            );
+        }
     }
 
     /**
@@ -53,43 +67,31 @@ return new class extends Migration
      */
     public function down()
     {
-        // Drop the table, which will also remove all its partitions
         Schema::dropIfExists('sensor_log_values');
-
-        // Optional: Drop the MySQL Event if it was created by this migration or related setup.
-        // DB::statement("DROP EVENT IF EXISTS manage_sensor_log_partitions;");
     }
 
     /**
-     * Helper function to generate initial partitions dynamically.
-     * Generates partitions for the current week and the next 'numWeeks' weeks.
-     * Each partition's 'VALUES LESS THAN' will be the UNIX timestamp of the start of the following week.
+     * Helper function to generate weekly partition ranges.
      *
-     * @param int $numWeeks The number of future weeks to generate partitions for.
-     * @return string The SQL string for initial partitions.
+     * @param int $numWeeks
+     * @return array
      */
-    protected function generateInitialPartitions(int $numWeeks = 5): string
+    protected function weeklyRanges(int $numWeeks = 5): array
     {
-        $partitions = [];
-        $currentDate = new \DateTime();
-
-        // Move the date to the beginning of the *current* ISO week (Monday)
-        // This ensures consistent weekly partitioning starting on Monday.
-        $currentDate->setISODate($currentDate->format('Y'), $currentDate->format('W'), 1);
+        $monday = new \DateTimeImmutable('Monday this week 00:00:00');
+        $ranges = [];
 
         for ($i = 0; $i < $numWeeks; $i++) {
-            $partitionEndDate = clone $currentDate;
-            $partitionEndDate->modify('+1 week'); // End of current partition (start of next week)
+            $start = $monday->modify("+{$i} weeks");
+            $end   = $start->modify('+1 week');
 
-            $partitionName = 'p' . $currentDate->format('Ymd'); // e.g., p20240617
-            $partitionValuesLessThan = $partitionEndDate->getTimestamp();
-
-            $partitions[] = "PARTITION {$partitionName} VALUES LESS THAN ({$partitionValuesLessThan})";
-
-            // Move to the start of the next week for the next partition
-            $currentDate->modify('+1 week');
+            $ranges[] = [
+                'sensor_log_values_p'.$start->format('Ymd'),
+                $start->format('Y-m-d H:i:s'),
+                $end->format('Y-m-d H:i:s'),
+            ];
         }
 
-        return implode(",\n                ", $partitions);
+        return $ranges;
     }
 };

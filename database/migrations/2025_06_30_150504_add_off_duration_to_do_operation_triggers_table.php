@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('do_operation_triggers', function (Blueprint $table) {
-            $table->unsignedBigInteger('off_duration')->nullable()->after('duration');
-        });
+        if (! Schema::hasColumn('do_operation_triggers', 'off_duration')) {
+            Schema::table('do_operation_triggers', function (Blueprint $table) {
+                $table->unsignedBigInteger('off_duration')->nullable()->after('duration');
+            });
+        }
     }
 
     /**
@@ -21,8 +23,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('do_operation_triggers', function (Blueprint $table) {
-            $table->dropColumn('off_duration');
-        });
+        if (Schema::hasColumn('do_operation_triggers', 'off_duration')) {
+            Schema::table('do_operation_triggers', function (Blueprint $table) {
+                $table->dropColumn('off_duration');
+            });
+        }
     }
 };
