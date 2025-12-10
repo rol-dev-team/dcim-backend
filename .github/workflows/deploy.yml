@@ -43,7 +43,7 @@ jobs:
           port: 3143 
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            DEPLOY_DIR=""/var/www/html/dcim/backend"
+            DEPLOY_DIR="/var/www/html/dcim/backend"
             echo "Running Laravel commands in $DEPLOY_DIR"
 
             mkdir -p $DEPLOY_DIR 
