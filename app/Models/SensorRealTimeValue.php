@@ -12,8 +12,10 @@ class SensorRealTimeValue extends Model
 
     protected $table = 'sensor_real_time_values';
 
-    protected $fillable = [
+     protected $fillable = [
         'sensor_id',
         'value',
+        'received_at',
+        'topic'
     ];
 }

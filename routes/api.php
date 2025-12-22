@@ -209,6 +209,20 @@ Route::get('userfetch', [UserLoginController::class, 'FetchUser']);
 //});
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+Route::get('/sensor-real-time/{dataCenterId}',[SensorListController::class, 'getSensorByDataCenter']);
+
 Route::post('/control-led', [RemoteDeviceController::class, 'controlLed']);
 
 

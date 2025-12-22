@@ -10,11 +10,7 @@ use Illuminate\Support\Facades\DB;
 
 class SensorListController extends Controller
 {
-//    public function index()
-//    {
-//        $sensorLists = SensorList::with(['dataCenter', 'device', 'sensorType', 'triggerType'])->get();
-//        return response()->json($sensorLists);
-//    }
+
 
     public function index(Request $request)
     {
@@ -25,20 +21,20 @@ class SensorListController extends Controller
             'triggerType'
         ]);
 
-        // Apply filters if 'device_id' is present in the request
+        
         if ($request->has('device_id')) {
             $query->where('device_id', $request->device_id);
         }
 
-        // Apply filters if 'trigger_type_id' is present in the request
+        
         if ($request->has('trigger_type_id')) {
             $query->where('trigger_type_id', $request->trigger_type_id);
         }
 
-        // Get the results from the database
+        
         $sensorLists = $query->get();
 
-        // Return the sensor lists as a JSON response
+        
         return response()->json($sensorLists);
     }
 
@@ -84,14 +80,14 @@ class SensorListController extends Controller
         ]);
 
         try {
-            // Generate a 7-digit unique ID
+            
             do {
                 $uniqueId = mt_rand(1000000, 9999999);
             } while (SensorList::where('unique_id', $uniqueId)->exists());
 
             $validated['unique_id'] = $uniqueId;
 
-            // Start database transaction
+            
             DB::beginTransaction();
 
             $sensorList = SensorList::create($validated);
@@ -318,4 +314,32 @@ class SensorListController extends Controller
         $sensors = SensorList::where('device_id', $deviceId)->get();
         return response()->json($sensors);
     }
+
+
+
+    public function getSensorByDataCenter($dataCenterId)
+    {
+        $data = DB::select(
+            "
+            SELECT v.sensor_id,v.value,s.data_center_id, s.sensor_type_list_id as sensor_type,
+                s.sensor_name,
+                s.location,
+                l.name AS sensor_type_name
+            FROM sensor_real_time_values v
+            JOIN sensor_lists s
+                ON v.sensor_id = s.id
+            JOIN sensor_type_lists l
+                ON s.sensor_type_list_id = l.id
+            WHERE s.data_center_id = ?
+            ORDER BY s.sensor_name
+            ",
+            [$dataCenterId]
+        );
+
+        return response()->json([
+            'success' => true,
+            'data' => $data
+        ]);
+    }
+
 }

@@ -13,8 +13,10 @@ return new class extends Migration
     {
         Schema::create('sensor_real_time_values', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('sensor_id');
+            $table->unsignedBigInteger('sensor_id')->unique();
             $table->string('value', 255);
+            $table->timestamp('received_at')->nullable();
+            $table->string('topic', 255)->nullable();
             $table->timestamps();
         });
     }

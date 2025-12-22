@@ -75,16 +75,19 @@ class MqttListener extends Command
                                                         echo "Logged and deleted previous data for Sensor ID: {$sensor['id']}\n";
                                                     }
 
-                                                    SensorRealTimeValue::create([
-                                                        'sensor_id' => $sensor['id'],
+                                                    
+                                                SensorRealTimeValue::updateOrCreate(
+                                                    ['sensor_id' => $sensor['id']],
+                                                    [                              
                                                         'value' => $sensor['val'],
                                                         'received_at' => now(),
                                                         'topic' => $topic
-                                                    ]);
+                                                    ]
+                                                );
 
-                                                    echo "Inserted Sensor ID: {$sensor['id']} with Value: {$sensor['val']} from topic: $topic\n";
+                                                echo "Updated/Inserted Sensor ID: {$sensor['id']} with Value: {$sensor['val']} from topic: $topic\n";
 
-                                                    DB::commit();
+                                                DB::commit();
 
                                                 } catch (\Exception $e) {
                                                     
