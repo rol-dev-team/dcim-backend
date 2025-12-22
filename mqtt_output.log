@@ -1,0 +1,5 @@
+Attempting to connect to MQTT: 182.48.80.230:1883
+✓ Connected to MQTT broker
+✓ Found 4 topics
+Subscribing to topics: dc_1/device_1/json, dc_2/device_1/json, dc_3/device_3/json, dc_1/device_2/json
+✗ Failed to subscribe to topics
