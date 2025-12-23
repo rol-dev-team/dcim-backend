@@ -13,6 +13,7 @@ class StateConfig extends Model
 
     protected $fillable = [
         'sensor_id',
+        'path',
         'value',
         'name',
         'attache_sound',

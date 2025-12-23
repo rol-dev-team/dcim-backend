@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('state_configs', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('sensor_id');
+            $table->string('path')->nullable();
             $table->integer('value');
             $table->string('name', 255);
             $table->string('attache_sound', 255)->nullable();

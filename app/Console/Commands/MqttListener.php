@@ -332,4 +332,5 @@ class MqttListener extends Command
             $this->error("Could not connect to MQTT broker");
         }
     }
+    
 }

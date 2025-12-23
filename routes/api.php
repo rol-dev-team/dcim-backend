@@ -278,7 +278,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
         //    Route::get('/fetch-sensortype-list', [SensorTypeListController::class, 'fetchSensorTypeList']);
 
-            Route::get('/by-device/{deviceId}', [SensorListController::class, 'getByDevice']);
+            Route::get('/by-device/{deviceId}/{sensorTypeId}', [SensorListController::class, 'getByDevice']);
 
         });
         Route::prefix('state-configs')->group(function () {

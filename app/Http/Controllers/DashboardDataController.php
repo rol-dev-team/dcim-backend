@@ -14,22 +14,22 @@ class DashboardDataController extends Controller
             return response()->json(['error' => 'Invalid data center ID'], 400);
         }
 
-//        $thresholds = DB::table('threshold_values as tv')
-//            ->select(
-//                'tv.sensor_id',
-//                'tv.threshold_type_id',
-//                'tv.threshold',
-//                'ty.name as threshold_name',
-//                'ty.color',
-//                'sl.location',
-//                'dcc.id as dc_id',
-//                'dcc.name as dc_name'
-//            )
-//            ->join('threshold_types as ty', 'tv.threshold_type_id', '=', 'ty.id')
-//            ->join('sensor_lists as sl', 'tv.sensor_id', '=', 'sl.id')
-//            ->join('data_center_creations as dcc', 'sl.data_center_id', '=', 'dcc.id')
-//            ->where('dcc.id', $dataCenterId)
-//            ->get();
+        //        $thresholds = DB::table('threshold_values as tv')
+        //            ->select(
+        //                'tv.sensor_id',
+        //                'tv.threshold_type_id',
+        //                'tv.threshold',
+        //                'ty.name as threshold_name',
+        //                'ty.color',
+        //                'sl.location',
+        //                'dcc.id as dc_id',
+        //                'dcc.name as dc_name'
+        //            )
+        //            ->join('threshold_types as ty', 'tv.threshold_type_id', '=', 'ty.id')
+        //            ->join('sensor_lists as sl', 'tv.sensor_id', '=', 'sl.id')
+        //            ->join('data_center_creations as dcc', 'sl.data_center_id', '=', 'dcc.id')
+        //            ->where('dcc.id', $dataCenterId)
+        //            ->get();
 
         $thresholds = DB::connection('mysql')->select("SELECT tv.sensor_id, tv.threshold_type_id, tv.threshold, ty.name threshold_name, ty.color, sl.location, stl.id sensor_type, stl.name sensor_type_name
             , dcc.id dc_id, dcc.name dc_name
@@ -66,6 +66,7 @@ class DashboardDataController extends Controller
 
     public function getStatesByDataCenter($dataCenterId)
     {
+
         // Validate the ID is numeric
         if (!is_numeric($dataCenterId)) {
             return response()->json(['error' => 'Invalid data center ID'], 400);

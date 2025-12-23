@@ -23,6 +23,7 @@ class StateConfigController extends Controller
     {
         $validated = $request->validate([
             'sensor_id' => 'required|exists:sensor_lists,id',
+            'path'=>'nullable|string|max:255',
             'value' => 'required|integer',
             'name' => 'required|string|max:255',
             'attache_sound' => 'nullable|string|max:255',
@@ -45,6 +46,7 @@ class StateConfigController extends Controller
     {
         $validated = $request->validate([
             'sensor_id' => 'required|exists:sensor_lists,id',
+            'path'=>'nullable|string|max:255',
             'value' => 'required|integer',
             'name' => 'required|string|max:255',
             'attache_sound' => 'nullable|string|max:255',

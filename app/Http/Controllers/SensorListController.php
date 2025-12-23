@@ -281,9 +281,12 @@ class SensorListController extends Controller
         ]);
     }
 
-    public function getByDevice($deviceId)
+    public function getByDevice($deviceId,$sensorTypeId)
     {
-        $sensors = SensorList::where('device_id', $deviceId)->get();
+        $sensors = SensorList::where('device_id', $deviceId)
+        ->where('sensor_type_list_id',$sensorTypeId)
+        ->where('trigger_type_id',2)
+        ->get();
         return response()->json($sensors);
     }
 }
